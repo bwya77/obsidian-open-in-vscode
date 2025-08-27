@@ -50,6 +50,24 @@ export default class OpenInVSCodePlugin extends Plugin {
 			}
 		});
 
+		// Command to open current file's folder in VSCode
+		this.addCommand({
+			id: 'open-current-folder-in-vscode',
+			name: 'Open current folder in VSCode',
+			checkCallback: (checking: boolean) => {
+				const activeFile = this.app.workspace.getActiveFile();
+				
+				if (activeFile) {
+					if (!checking) {
+						this.openFolderInVSCode(activeFile);
+					}
+					return true;
+				}
+				
+				return false;
+			}
+		});
+
 		// Add settings tab
 		this.addSettingTab(new OpenInVSCodeSettingTab(this.app, this));
 
@@ -510,6 +528,51 @@ export default class OpenInVSCodePlugin extends Plugin {
 		} catch (error) {
 			console.error('Error opening file in VSCode:', error);
 			new Notice(`Failed to open file in VSCode: ${error.message}`);
+		}
+	}
+
+	async openFolderInVSCode(file: TFile) {
+		try {
+			const adapter = this.app.vault.adapter as any;
+			const basePath = adapter.basePath || adapter.path || '';
+			let folderPath: string;
+			
+			// Get the folder containing the file
+			if (file.parent) {
+				// File is in a subfolder
+				folderPath = `${basePath}/${file.parent.path}`;
+			} else {
+				// File is in root, open the vault root
+				folderPath = basePath;
+			}
+			
+			const vscodeCommand = await this.getVSCodeCommand();
+			const command = `"${vscodeCommand}" "${folderPath}"`;
+			
+			// Use shell: true to ensure proper command expansion on all platforms
+			const { exec } = require('child_process');
+			exec(command, { shell: true }, (error: any) => {
+				if (error) {
+					console.error('Error opening folder in VSCode:', error);
+					
+					// Provide helpful error message
+					if (error.message.includes('command not found') || error.message.includes('is not recognized')) {
+						new Notice('VSCode not found! Please install VSCode or configure the path in plugin settings.');
+						
+						// Open settings tab
+						(this.app as any).setting.open();
+						(this.app as any).setting.openTabById(this.manifest.id);
+					} else {
+						new Notice(`Failed to open folder in VSCode: ${error.message}`);
+					}
+				} else {
+					const folderName = file.parent ? file.parent.name : 'Vault Root';
+					new Notice(`Opening folder "${folderName}" in VSCode`);
+				}
+			});
+		} catch (error) {
+			console.error('Error opening folder in VSCode:', error);
+			new Notice(`Failed to open folder in VSCode: ${error.message}`);
 		}
 	}
 

@@ -1,7 +1,7 @@
 {
 	"id": "open-in-vscode",
 	"name": "Open in VSCode",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Open files and code blocks in Visual Studio Code with smart detection, customizable buttons, and proper syntax highlighting",
 	"author": "Bradley Wyatt",
