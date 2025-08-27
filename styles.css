@@ -1,8 +1,133 @@
-/*
+/* Make pre elements relative for absolute button positioning */
+pre.has-vscode-button {
+    position: relative;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Make room for button on right side */
+pre.has-vscode-button[data-button-position="right"] {
+    padding-right: 80px;
+}
 
-If your plugin does not need CSS, delete this file.
+/* Make room for button on left side */
+pre.has-vscode-button[data-button-position="left"] {
+    padding-left: 8px; /* Minimal left padding */
+    padding-top: 45px; /* Space at top for button */
+}
 
-*/
+/* Make room for button in center */
+pre.has-vscode-button[data-button-position="center"] {
+    padding-top: 45px; /* Space at top for button */
+}
+
+/* Position left-side button at the very top */
+pre.has-vscode-button[data-button-position="left"] .vscode-button-wrapper {
+    top: 8px;
+    left: 8px;
+}
+
+/* Position center button at the very top */
+pre.has-vscode-button[data-button-position="center"] .vscode-button-wrapper {
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* VSCode button wrapper positioned inside the code block */
+.vscode-button-wrapper {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    opacity: 0.6;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.vscode-button-wrapper:hover {
+    opacity: 1;
+}
+
+/* Hover-only mode: hide button by default, show on code block hover */
+.vscode-hover-only {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+pre.has-vscode-button:hover .vscode-hover-only {
+    opacity: 0.6;
+}
+
+pre.has-vscode-button:hover .vscode-hover-only:hover {
+    opacity: 1;
+}
+
+/* Base button styles */
+.vscode-open-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    min-width: 60px;
+    font-family: var(--font-interface);
+    transition: all 0.2s ease-in-out;
+}
+
+.vscode-open-button:active {
+    transform: scale(0.95);
+}
+
+/* Native theme styling (like copy button) */
+.vscode-open-button.vscode-native-theme {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.vscode-open-button.vscode-native-theme:hover {
+    background-color: var(--background-modifier-border);
+    color: var(--text-normal);
+}
+
+/* Dark theme specific for native styling */
+.theme-dark .vscode-open-button.vscode-native-theme {
+    background-color: var(--background-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.theme-dark .vscode-open-button.vscode-native-theme:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* Light theme specific for native styling */
+.theme-light .vscode-open-button.vscode-native-theme {
+    background-color: var(--background-primary);
+    color: var(--text-muted);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.theme-light .vscode-open-button.vscode-native-theme:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* Accent theme styling (original behavior) */
+.vscode-open-button.vscode-accent-theme {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: 1px solid var(--interactive-accent);
+}
+
+.vscode-open-button.vscode-accent-theme:hover {
+    opacity: 0.8;
+}
+
+/* Mobile - hide buttons since VSCode won't work on mobile */
+.is-mobile .vscode-button-wrapper {
+    display: none;
+}
