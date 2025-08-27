@@ -3,8 +3,12 @@
 	"name": "Open in VSCode",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Open the current file in Visual Studio Code at the cursor position",
-	"author": "Your Name",
-	"authorUrl": "",
+	"description": "Open files and code blocks in Visual Studio Code with smart detection, customizable buttons, and proper syntax highlighting",
+	"author": "Bradley Wyatt",
+	"authorUrl": "https://github.com/bwya77",
+		"fundingUrl": {
+			"Buy Me a Coffee": "https://buymeacoffee.com/bwya77",
+			"GitHub Sponsor":  "https://github.com/sponsors/bwya77"
+		},
 	"isDesktopOnly": true
 }
