@@ -9,6 +9,7 @@ const execAsync = promisify(exec);
 
 interface OpenInVSCodeSettings {
 	customVSCodePath: string;
+	backupVSCodePath: string;
 	showCodeBlockButtons: boolean;
 	buttonPosition: 'left' | 'right' | 'center';
 	showOnHoverOnly: boolean;
@@ -17,6 +18,7 @@ interface OpenInVSCodeSettings {
 
 const DEFAULT_SETTINGS: OpenInVSCodeSettings = {
 	customVSCodePath: '',
+	backupVSCodePath: '',
 	showCodeBlockButtons: true,
 	buttonPosition: 'right',
 	showOnHoverOnly: false,
@@ -401,9 +403,28 @@ export default class OpenInVSCodePlugin extends Plugin {
 	}
 
 	async getVSCodeCommand(): Promise<string> {
-		// If user has specified a custom path, use it
-		if (this.settings.customVSCodePath) {
-			return this.settings.customVSCodePath;
+		// Try custom path first, then backup path
+		const pathsToTry = [
+			this.settings.customVSCodePath,
+			this.settings.backupVSCodePath
+		].filter(path => path.trim() !== '');
+		
+		// Test user-provided paths first
+		for (const customPath of pathsToTry) {
+			try {
+				await execAsync(`"${customPath}" --version`);
+				console.log('Using custom VSCode path:', customPath);
+				return customPath;
+			} catch (e) {
+				console.log('Custom VSCode path failed:', customPath);
+				continue;
+			}
+		}
+		
+		// If custom paths failed, fall back to auto-detection
+		console.log('Custom paths failed, trying auto-detection');
+		if (this.settings.customVSCodePath || this.settings.backupVSCodePath) {
+			// User provided custom paths but they failed, still try auto-detection as last resort
 		}
 
 		const os = platform();
@@ -529,30 +550,38 @@ class OpenInVSCodeSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Open in VSCode Settings'});
-
-		containerEl.createEl('p', {text: 'Configure how the plugin opens files in Visual Studio Code.'});
-
 		const os = platform();
-		let placeholder = 'Leave empty to auto-detect';
-		let description = 'Full path to VSCode executable.';
 		
+		// Primary VSCode path setting with OS-specific instructions
+		let primaryPathDesc = 'Full path to VSCode executable (leave empty for auto-detection). ';
 		if (os === 'darwin') {
-			description += ' On macOS, typically: /Applications/Visual Studio Code.app/Contents/Resources/app/bin/code';
+			primaryPathDesc += 'To find your path, run: which code';
 		} else if (os === 'win32') {
-			description += ' On Windows, typically: C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd';
+			primaryPathDesc += 'To find your path, run: where code';
 		} else {
-			description += ' On Linux, typically: /usr/bin/code';
+			primaryPathDesc += 'To find your path, run: which code';
 		}
 
 		new Setting(containerEl)
-			.setName('Custom VSCode Path')
-			.setDesc(description)
+			.setName('Primary VSCode Path')
+			.setDesc(primaryPathDesc)
 			.addText(text => text
-				.setPlaceholder(placeholder)
+				.setPlaceholder('Leave empty to auto-detect')
 				.setValue(this.plugin.settings.customVSCodePath)
 				.onChange(async (value) => {
 					this.plugin.settings.customVSCodePath = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Backup VSCode path setting
+		new Setting(containerEl)
+			.setName('Backup VSCode Path')
+			.setDesc('Alternative VSCode path to try if the primary path fails')
+			.addText(text => text
+				.setPlaceholder('Optional backup path')
+				.setValue(this.plugin.settings.backupVSCodePath)
+				.onChange(async (value) => {
+					this.plugin.settings.backupVSCodePath = value;
 					await this.plugin.saveSettings();
 				}));
 
