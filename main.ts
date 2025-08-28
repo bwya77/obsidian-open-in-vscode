@@ -129,7 +129,7 @@ export default class OpenInVSCodePlugin extends Plugin {
 				wrapper.style.right = 'unset';
 				wrapper.style.transform = 'translateX(-50%)';
 			} else {
-				wrapper.style.right = '8px';
+				wrapper.style.right = '48px'; // Position to the left of copy button
 				wrapper.style.left = 'unset';
 				wrapper.style.transform = 'unset';
 			}
