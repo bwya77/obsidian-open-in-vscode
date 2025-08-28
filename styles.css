@@ -10,18 +10,17 @@ pre.has-vscode-button[data-button-position="right"] {
 
 /* Make room for button on left side */
 pre.has-vscode-button[data-button-position="left"] {
-    padding-left: 8px; /* Minimal left padding */
-    padding-top: 45px; /* Space at top for button */
+    padding-top: 35px; /* Space at top for button */
 }
 
 /* Make room for button in center */
 pre.has-vscode-button[data-button-position="center"] {
-    padding-top: 45px; /* Space at top for button */
+    padding-top: 35px; /* Space at top for button */
 }
 
-/* Position left-side button at the very top */
+/* Position left-side button at top */
 pre.has-vscode-button[data-button-position="left"] .vscode-button-wrapper {
-    top: 8px;
+    top: 6px;
     left: 8px;
 }
 
@@ -62,18 +61,23 @@ pre.has-vscode-button:hover .vscode-hover-only:hover {
 
 /* Base button styles */
 .vscode-open-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
+    display: inline-block !important;
+    border: none !important;
+    border-radius: 3px !important;
+    padding: 2px 6px !important;
+    margin: 0 !important;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    min-width: 60px;
+    font-size: 10px !important;
+    font-weight: 400;
+    width: auto !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    max-height: 18px !important;
+    line-height: 14px !important;
     font-family: var(--font-interface);
     transition: all 0.2s ease-in-out;
+    text-align: center;
+    box-sizing: border-box !important;
 }
 
 .vscode-open-button:active {
