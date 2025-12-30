@@ -6,7 +6,10 @@ A powerful Obsidian plugin that seamlessly integrates with Visual Studio Code, a
 
 ### 🎯 **Smart Code Block Integration**
 - **Clickable buttons** on every code block in Reading View
-- **Intelligent detection**: File paths open actual files, code content creates temporary files
+- **Two opening modes**:
+  - **Markdown navigation** (default): Opens the markdown file in VSCode at the exact code block location - edit in place and see changes in Obsidian
+  - **Temp file mode**: Opens just the code block as a temporary file with proper syntax highlighting
+- **Intelligent detection**: File paths always open actual files directly
 - **Language detection**: Automatically detects programming languages and applies proper file extensions (.js, .py, .java, etc.)
 
 ### ⚙️ **Highly Customizable**
@@ -22,28 +25,35 @@ A powerful Obsidian plugin that seamlessly integrates with Visual Studio Code, a
 ## Usage
 
 ### Method 1: Code Block Buttons
-**In Reading View**, every code block displays a "VSCode" button. Click it to:
+**In Reading View**, every code block displays a "VSCode" button. The behavior depends on your settings:
 
-**File paths automatically open the actual file:**
-```
-/Users/username/project/main.js
-./src/components/App.tsx
-~/Documents/scripts/script.py
-file: src/utils/helper.ts
-```
+#### Markdown Navigation Mode (Default)
+Clicking the button opens your **actual markdown file** in VSCode, scrolled to the exact code block location:
+- Edit code blocks directly in the markdown file
+- Changes save automatically back to your Obsidian note
+- Full context of your note available while editing
+- VSCode syntax highlighting for markdown code blocks
 
-**Code snippets create temporary files with syntax highlighting:**
 ```javascript
 function hello() {
     console.log("Hello World!");
 }
 ```
+*Clicking this opens the .md file at this code block's line*
 
-```python
-def calculate_fibonacci(n):
-    if n <= 1:
-        return n
-    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+#### Temp File Mode (Optional)
+When disabled in settings, code blocks open as **temporary files** with proper syntax highlighting:
+- Isolated editing environment
+- Proper file extension (.js, .py, etc.) for full language support
+- Useful for quick code testing without modifying your note
+
+#### File Path Detection (Always Active)
+**File paths in code blocks automatically open the actual file** (regardless of mode):
+```
+/Users/username/project/main.js
+./src/components/App.tsx
+~/Documents/scripts/script.py
+file: src/utils/helper.ts
 ```
 
 ### Method 2: Command Palette
@@ -57,6 +67,9 @@ def calculate_fibonacci(n):
 ### Core Settings
 - **Show code block buttons**: Enable/disable the code block integration
 - **Custom VSCode Path**: Specify VSCode executable path if auto-detection fails
+- **Open markdown at code block**: Toggle between opening modes
+  - **Enabled** (default): Opens the markdown file at the code block - allows editing in place
+  - **Disabled**: Opens just the code block as a temporary file
 
 ### Button Customization
 - **Button position**: Left side, Center, or Right side

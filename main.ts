@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile, App } from 'obsidian';
+import { MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile, App, MarkdownPostProcessorContext } from 'obsidian';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { platform } from 'os';
@@ -14,6 +14,7 @@ interface OpenInVSCodeSettings {
 	buttonPosition: 'left' | 'right' | 'center';
 	showOnHoverOnly: boolean;
 	useNativeThemeColors: boolean;
+	openMarkdownAtCodeBlock: boolean;
 }
 
 const DEFAULT_SETTINGS: OpenInVSCodeSettings = {
@@ -22,7 +23,8 @@ const DEFAULT_SETTINGS: OpenInVSCodeSettings = {
 	showCodeBlockButtons: true,
 	buttonPosition: 'right',
 	showOnHoverOnly: false,
-	useNativeThemeColors: true
+	useNativeThemeColors: true,
+	openMarkdownAtCodeBlock: true
 }
 
 export default class OpenInVSCodePlugin extends Plugin {
@@ -76,15 +78,22 @@ export default class OpenInVSCodePlugin extends Plugin {
 		if (this.settings.showCodeBlockButtons) {
 			this.registerMarkdownPostProcessor((element, context) => {
 				console.log('Markdown post processor called');
-				this.processCodeBlocksInElement(element);
+				this.processCodeBlocksInElement(element, context);
 			});
 		}
 	}
 
-	processCodeBlocksInElement(element: HTMLElement) {
+	processCodeBlocksInElement(element: HTMLElement, context: MarkdownPostProcessorContext) {
 		const codeBlocks = element.querySelectorAll('pre');
 		console.log('Found pre elements:', codeBlocks.length);
-		
+
+		// Get source file information from context
+		const sourcePath = context.sourcePath;
+		const sectionInfo = context.getSectionInfo(element);
+
+		console.log('Context sourcePath:', sourcePath);
+		console.log('Section info:', sectionInfo);
+
 		codeBlocks.forEach((pre, index) => {
 			// Skip if already processed
 			if (pre.classList.contains('has-vscode-button')) {
@@ -100,10 +109,18 @@ export default class OpenInVSCodePlugin extends Plugin {
 			
 			const text = code.textContent || '';
 			console.log(`Pre ${index} text:`, text.substring(0, 100));
-			
+
 			// Add button to ALL code blocks (not just file paths)
 			console.log(`Adding button to pre ${index}`);
 			pre.classList.add('has-vscode-button');
+
+			// Store source file information for markdown navigation
+			if (sourcePath) {
+				pre.setAttribute('data-source-path', sourcePath);
+			}
+			if (sectionInfo && sectionInfo.lineStart !== undefined) {
+				pre.setAttribute('data-source-line', sectionInfo.lineStart.toString());
+			}
 			
 			// Create button wrapper
 			const wrapper = document.createElement('div');
@@ -141,8 +158,26 @@ export default class OpenInVSCodePlugin extends Plugin {
 				e.preventDefault();
 				e.stopPropagation();
 				console.log('Reading view button clicked!');
-				
-				// Try to detect file path first
+
+				// Check if we should open the markdown file at the code block
+				if (this.settings.openMarkdownAtCodeBlock) {
+					const sourcePathAttr = pre.getAttribute('data-source-path');
+					const sourceLineAttr = pre.getAttribute('data-source-line');
+
+					if (sourcePathAttr) {
+						// Open the markdown file at the code block line
+						const file = this.app.vault.getAbstractFileByPath(sourcePathAttr);
+						if (file instanceof TFile) {
+							const lineNumber = sourceLineAttr ? parseInt(sourceLineAttr) + 1 : undefined;
+							await this.openMarkdownFileAtLine(file, lineNumber);
+							return;
+						} else {
+							console.warn('Could not find file for source path:', sourcePathAttr);
+						}
+					}
+				}
+
+				// Fallback to old behavior: detect file path or create temp file
 				const filePath = this.detectFilePath(text);
 				if (filePath) {
 					console.log('File path detected:', filePath);
@@ -489,32 +524,78 @@ export default class OpenInVSCodePlugin extends Plugin {
 		return 'code';
 	}
 
+	async openMarkdownFileAtLine(file: TFile, lineNumber?: number) {
+		try {
+			const adapter = this.app.vault.adapter as any;
+			const basePath = adapter.basePath || adapter.path || '';
+			const filePath = `${basePath}/${file.path}`;
+
+			const vscodeCommand = await this.getVSCodeCommand();
+
+			let command: string;
+			if (lineNumber && lineNumber > 0) {
+				command = `"${vscodeCommand}" --goto "${filePath}:${lineNumber}"`;
+				console.log('Opening markdown at line:', lineNumber);
+			} else {
+				command = `"${vscodeCommand}" "${filePath}"`;
+			}
+
+			// Use shell: true to ensure proper command expansion on all platforms
+			const { exec } = require('child_process');
+			exec(command, { shell: true }, (error: any) => {
+				if (error) {
+					console.error('Error opening markdown in VSCode:', error);
+
+					// Provide helpful error message
+					if (error.message.includes('command not found') || error.message.includes('is not recognized')) {
+						new Notice('VSCode not found! Please install VSCode or configure the path in plugin settings.');
+
+						// Open settings tab
+						(this.app as any).setting.open();
+						(this.app as any).setting.openTabById(this.manifest.id);
+					} else {
+						new Notice(`Failed to open file in VSCode: ${error.message}`);
+					}
+				} else {
+					if (lineNumber && lineNumber > 0) {
+						new Notice(`Opening ${file.name} at line ${lineNumber} in VSCode`);
+					} else {
+						new Notice(`Opening ${file.name} in VSCode`);
+					}
+				}
+			});
+		} catch (error) {
+			console.error('Error opening markdown in VSCode:', error);
+			new Notice(`Failed to open file in VSCode: ${error.message}`);
+		}
+	}
+
 	async openFileInVSCode(file: TFile) {
 		try {
 			const adapter = this.app.vault.adapter as any;
 			const basePath = adapter.basePath || adapter.path || '';
 			const filePath = `${basePath}/${file.path}`;
-			
+
 			const lineNumber = this.getActiveLineNumber();
 			const vscodeCommand = await this.getVSCodeCommand();
-			
+
 			let command: string;
 			if (lineNumber > 0) {
 				command = `"${vscodeCommand}" --goto "${filePath}:${lineNumber}"`;
 			} else {
 				command = `"${vscodeCommand}" "${filePath}"`;
 			}
-			
+
 			// Use shell: true to ensure proper command expansion on all platforms
 			const { exec } = require('child_process');
 			exec(command, { shell: true }, (error: any) => {
 				if (error) {
 					console.error('Error opening file in VSCode:', error);
-					
+
 					// Provide helpful error message
 					if (error.message.includes('command not found') || error.message.includes('is not recognized')) {
 						new Notice('VSCode not found! Please install VSCode or configure the path in plugin settings.');
-						
+
 						// Open settings tab
 						(this.app as any).setting.open();
 						(this.app as any).setting.openTabById(this.manifest.id);
@@ -693,6 +774,16 @@ class OpenInVSCodeSettingTab extends PluginSettingTab {
 					this.plugin.settings.useNativeThemeColors = value;
 					await this.plugin.saveSettings();
 					new Notice('Please reload Obsidian for this change to take effect');
+				}));
+
+		new Setting(containerEl)
+			.setName('Open markdown at code block')
+			.setDesc('Open the actual markdown file in VSCode at the code block location (allows editing in place). If disabled, opens code blocks as temporary files.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.openMarkdownAtCodeBlock)
+				.onChange(async (value) => {
+					this.plugin.settings.openMarkdownAtCodeBlock = value;
+					await this.plugin.saveSettings();
 				}));
 	}
 }
